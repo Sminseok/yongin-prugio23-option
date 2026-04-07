@@ -362,53 +362,23 @@ def seed_if_empty():
 if __name__ == "__main__":
     seed_if_empty()
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)), debug=True)
-# 🔥 추가 (파일 어디든 상관없지만 보통 아래쪽에 둠)
+
 def seed_if_empty():
-    import sqlite3
-    from pathlib import Path
-
-    DB_PATH = Path("instance/app.db")
-    BASE_DIR = Path(".")
-
-    def init_db():
-        DB_PATH.parent.mkdir(parents=True, exist_ok=True)
-        db = sqlite3.connect(DB_PATH)
-        db.execute("""
-        CREATE TABLE IF NOT EXISTS units (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            data TEXT
-        )
-        """)
-        db.commit()
-        db.close()
-
-    def parse_excel(file):
-        import pandas as pd
-        df = pd.read_excel(file)
-        return df.to_dict(orient="records")
-
-    def replace_units(rows, filename=None):
-        db = sqlite3.connect(DB_PATH)
-        db.execute("DELETE FROM units")
-        for r in rows:
-            db.execute("INSERT INTO units (data) VALUES (?)", (str(r),))
-        db.commit()
-        db.close()
-
-    # 초기화
-    init_db()
+    if not DB_PATH.exists():
+        init_db()
+    else:
+        init_db()
 
     db = sqlite3.connect(DB_PATH)
     count = db.execute("SELECT COUNT(*) FROM units").fetchone()[0]
     db.close()
-
-    # 비어있으면 seed.xlsx 넣기
     if count == 0:
         sample = BASE_DIR / "seed.xlsx"
         if sample.exists():
             rows = parse_excel(sample)
             replace_units(rows, filename=sample.name)
 
-
-# 🔥 이 한 줄이 핵심 (무조건 있어야 함)
 seed_if_empty()
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)), debug=True)
